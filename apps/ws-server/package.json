@@ -1,0 +1,26 @@
+{
+  "name": "ws-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "nodemon --exec ts-node ./src/index.ts --mode development",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "websocket",
+    "server"
+  ],
+  "author": "Sai Kumar P B (saipusarla7094@gmail.com)",
+  "license": "ISC",
+  "dependencies": {
+    "@types/uuid": "^9.0.4",
+    "redis": "^4.6.10",
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.31.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "ts-node": "^10.9.1"
+  }
+}
