@@ -7,7 +7,9 @@ import {
 } from 'uWebSockets.js';
 import { CERT_FILE_NAME, ENVIORNMENT, KEY_FILE_NAME, PORT } from './loadEnv';
 import { v4 } from 'uuid';
-import { connectRedisClient } from './redis';
+import { processMessage } from './message';
+import { decoder, getIp } from './utils';
+import { MessageType } from './types';
 
 const app: TemplatedApp =
     ENVIORNMENT === 'development'
@@ -16,8 +18,6 @@ const app: TemplatedApp =
               key_file_name: KEY_FILE_NAME,
               cert_file_name: CERT_FILE_NAME,
           });
-
-const redisClient = connectRedisClient();
 
 app.ws('/*', {
     idleTimeout: 0,
@@ -28,23 +28,23 @@ app.ws('/*', {
     open: async (ws: WebSocket<{ id: string }>) => {
         const userData = ws.getUserData();
         userData.id = v4();
-        console.log(`Client ${userData.id} opened a connection`);
-
-        (await redisClient).set(userData.id, 0);
+        console.log(`Client ${getIp(ws)} opened a connection`);
     },
 
     message: async (ws, message) => {
-        const decoder = new TextDecoder();
-        console.log(ws.getUserData().id, decoder.decode(message));
-        const socketId = ws.getUserData().id;
-        const messageNumber = await (await redisClient).get(socketId);
-        ws.send(`socket: ${socketId}, message count :${messageNumber}`);
-        (await redisClient).set(socketId, parseInt(messageNumber!) + 1);
+        console.log("Client: " + getIp(ws), decoder.decode(message));
+        try {
+            processMessage(
+                ws,
+                JSON.parse(decoder.decode(message)) as MessageType
+            );
+        } catch (e) {
+            console.log(e);
+        }
     },
 
     close: async (ws, code, message) => {
         console.log(`Closed conection for client ${ws.getUserData().id}`);
-        (await redisClient).del(ws.getUserData().id);
     },
 })
     .get('/*', (res, _req) => {
