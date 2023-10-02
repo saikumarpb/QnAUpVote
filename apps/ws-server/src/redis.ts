@@ -1,7 +1,7 @@
 import { createClient } from 'redis';
 import { REDIS_PASSWORD, REDIS_PORT, REDIS_URL } from './loadEnv';
 
-export const connectRedisClient = async (url = REDIS_URL) => {
+export const connectRedisClient = async () => {
     const client = createClient({
         password: REDIS_PASSWORD,
         socket: {

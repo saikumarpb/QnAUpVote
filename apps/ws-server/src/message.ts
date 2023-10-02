@@ -1,8 +1,7 @@
-import { RedisClientType } from 'redis';
 import { WebSocket } from 'uWebSockets.js';
 import { v4 } from 'uuid';
 import { connectRedisClient } from './redis';
-import { ErrorMessage, MessageType, PublishQuestion, QuestionObject } from './types';
+import { ErrorMessage, MessageType, PublishQuestion, QuestionObject, SubscribeSuccessMessage } from './types';
 
 
 const redisClient = connectRedisClient();
@@ -16,17 +15,25 @@ export async function processMessage(
     switch (message.method) {
         case 'SUBSCRIBE': {
             message.topics.forEach((topic) => {
+                topic = topic.trim()
+
                 ws.subscribe(topic);
                 console.log(
                     `client: ${
                         ws.getUserData().id
                     } subscribed to topic: ${topic}`
                 );
+                const subscribeSuccessMessage: SubscribeSuccessMessage = {
+                    method: 'SUBSCRIBE_SUCCESS',
+                    topic
+                }
+                ws.send(JSON.stringify(subscribeSuccessMessage))
             });
             break;
         }
         case 'UNSUBSCRIBE': {
             message.topics.forEach((topic) => {
+                topic = topic.trim()
                 ws.unsubscribe(topic);
                 console.log(
                     `client: ${
@@ -37,7 +44,9 @@ export async function processMessage(
             break;
         }
         case 'POST_QUESTION': {
-            const questionId = v4();
+            const prefix = "room_" + message.roomId + "_question_";
+            const roomId = message.roomId.trim()
+            const questionId = prefix + v4();
             const questionObj: QuestionObject = {
                 question: message.question,
                 votedBy: [],
@@ -53,7 +62,7 @@ export async function processMessage(
                         voteCount: 0,
                     };
 
-                    ws.publish(message.roomId, JSON.stringify(publishMessage));
+                    ws.publish(roomId, JSON.stringify(publishMessage));
                     ws.send(JSON.stringify(publishMessage));
                 });
             break;
@@ -82,8 +91,10 @@ export async function processMessage(
                             voteCount: question.votedBy.length,
                         };
 
+                        const roomId = questionId.split("_")[1]
+
                         ws.publish(
-                            message.roomId,
+                            roomId,
                             JSON.stringify(publishMessage)
                         );
                         ws.send(JSON.stringify(publishMessage));
@@ -119,9 +130,10 @@ export async function processMessage(
                             question: question.question,
                             voteCount: question.votedBy.length,
                         };
+                        const roomId = questionId.split("_")[1]
 
                         ws.publish(
-                            message.roomId,
+                            roomId,
                             JSON.stringify(publishMessage)
                         );
                         ws.send(JSON.stringify(publishMessage));
@@ -136,3 +148,4 @@ export async function processMessage(
         }
     }
 }
+
