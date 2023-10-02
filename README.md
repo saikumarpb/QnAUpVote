@@ -3,13 +3,18 @@ QnAVoteHub is a platform where you can ask questions. Upvote your favorite quest
 
 ## What's inside?
 
-This Turborepo includes the following packages/apps:
+This repo includes the following packages/apps:
 
 ### Apps and Packages
 
 - `ws-server`: Websocket server built using [uwebsockets.js](https://github.com/uNetworking/uWebSockets.js)
-- `ui`: a stub React component library shared by both `web` and `docs` applications
-- `eslint-config-custom`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `tsconfig`: `tsconfig.json`s used throughout the monorepo
+- `ui`: UI for QnA Upvote application
+- The technology stack used for this project comprises React, Node.js, Redis, and uWebSockets.js (library used for creating websocket server). 
+
+### Features
+- Posting questions.
+- Upvoting and unvoting questions.
+- Ensuring that only one vote can be cast per IP address.
+
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
