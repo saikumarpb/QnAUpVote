@@ -6,7 +6,8 @@
     "scripts": {
         "dev": "nodemon --exec ts-node ./src/index.ts --mode development",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "tsc"
+        "build": "tsc",
+        "server": "node dist/index.js"
     },
     "keywords": [
         "websocket",
