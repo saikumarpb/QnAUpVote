@@ -8,7 +8,7 @@ import { getQuestions } from './service';
 const Room: React.FC = () => {
     const [isSubscribedToRoom, setSubscribedToRoom] = useState(false);
     const { sendJsonMessage, readyState, lastJsonMessage } = useWebSocket(
-        'ws://localhost:9000',
+        import.meta.env.VITE_WS_BASE_URL,
         { share: true }
     );
     const [questions, setQuestions] = useState<GetQuestion[]>([]);
