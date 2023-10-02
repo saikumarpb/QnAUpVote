@@ -20,9 +20,6 @@ function App() {
         <div className="flex flex-col gap-2 ">
             <Stack
                 component="form"
-                sx={{
-                    width: '25ch',
-                }}
                 spacing={2}
                 noValidate
                 autoComplete="off"

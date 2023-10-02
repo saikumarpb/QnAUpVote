@@ -1,6 +1,7 @@
 import {
     App,
     DEDICATED_COMPRESSOR_3KB,
+    HttpResponse,
     SSLApp,
     TemplatedApp,
     WebSocket,
@@ -55,12 +56,13 @@ app.ws('/*', {
         res.writeStatus('200 OK').end(message);
     })
     .get(`/room/:roomid/questions`, async (res, req) => {
+
         res.onAborted(() => {
             res.aborted = true;
         });
         let roomid = req.getParameter(0);
         roomid = roomid.trim();
-        const questions = await getQuestions(`room_${roomid}_*`);
+        const questions = await getQuestions(`room_${roomid}_*`, res);
         /* If we were aborted, you cannot respond */
         if (!res.aborted) {
             res.cork(() => {
@@ -75,7 +77,7 @@ app.ws('/*', {
     });
 
 
-async function getQuestions(prefix: string): Promise<GetQuestion[]> {
+async function getQuestions(prefix: string, response: HttpResponse): Promise<GetQuestion[]> {
     let questions: GetQuestion[] = [];
     const client = await redisClient;
     for await (const key of client.scanIterator({
@@ -90,6 +92,8 @@ async function getQuestions(prefix: string): Promise<GetQuestion[]> {
                 questionId: key,
                 question: question.question,
                 votes: question.votedBy.length,
+                voted: question.votedBy.includes(decoder.decode(response.getRemoteAddressAsText())
+                )
             });
         }
     }

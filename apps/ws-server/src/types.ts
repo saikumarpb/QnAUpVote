@@ -46,4 +46,5 @@ export type GetQuestion = {
     question: string;
     questionId: string;
     votes: number;
+    voted: boolean
 };

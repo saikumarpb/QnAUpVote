@@ -1,37 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import QuestionItem from './QuestionItem';
-import { MessageType, PostQuestion, PublishQuestion, VoteQuestion } from '../types';
+import { GetQuestion, MessageType, PostQuestion, VoteQuestion } from '../types';
 import { useParams } from 'react-router';
+import { getQuestions } from './service';
 
 const Room: React.FC = () => {
-    const [isSubscribedToRoom, setSubscribedToRoom] = useState(false)
+    const [isSubscribedToRoom, setSubscribedToRoom] = useState(false);
     const { sendJsonMessage, readyState, lastJsonMessage } = useWebSocket(
         'ws://localhost:9000',
         { share: true }
     );
+    const [questions, setQuestions] = useState<GetQuestion[]>([]);
 
-    const {roomId} = useParams()
-
-    useEffect(() => {
-        if(roomId){
-        const message = {
-            method: 'SUBSCRIBE',
-            topics: [roomId],
-        };
-        sendJsonMessage(message);
-    }
-
-    }, [roomId])
+    const { roomId } = useParams();
 
     useEffect(() => {
-        const message = lastJsonMessage as MessageType
-        if(lastJsonMessage && message.method === 'SUBSCRIBE_SUCCESS'){
-            setSubscribedToRoom(() => true)
+        if (roomId) {
+            const message = {
+                method: 'SUBSCRIBE',
+                topics: [roomId],
+            };
+            sendJsonMessage(message);
+
+            getQuestions(roomId).then((data) => {
+                setQuestions(() => data);
+                console.log(data);
+            });
         }
-    })
+    }, [roomId, sendJsonMessage]);
 
+    useEffect(() => {
+        const message = lastJsonMessage as MessageType;
+        if (lastJsonMessage && message.method === 'SUBSCRIBE_SUCCESS') {
+            setSubscribedToRoom(() => true);
+        } else if (lastJsonMessage && message.method === 'PUBLISH_QUESTION') {
+            const filteredQuestions = questions.filter(
+                (xs) => xs.questionId !== message.questionId
+            );
 
+            setQuestions(() => {
+                return [
+                    ...filteredQuestions,
+                    {
+                        question: message.question,
+                        questionId: message.questionId,
+                        votes: message.voteCount,
+                    } as GetQuestion,
+                ];
+            });
+        }
+    }, [lastJsonMessage, questions]);
 
     const connectionStatus = {
         [ReadyState.CONNECTING]: 'Connecting',
@@ -41,9 +60,7 @@ const Room: React.FC = () => {
         [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
     }[readyState];
 
-
     const [inputText, setInputText] = useState('');
-    const [questions, setQuestions] = useState<PublishQuestion[]>([]);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setInputText(event.target.value);
@@ -52,28 +69,23 @@ const Room: React.FC = () => {
     const handlePostQuestion = () => {
         const message: PostQuestion = {
             method: 'POST_QUESTION',
-            roomId: '123', // Replace with the actual room ID
+            roomId: roomId!,
             question: inputText,
         };
-        getEventSource()?.onmessage;
         setInputText('');
+        sendJsonMessage(message)
     };
 
-    const handleUpvote = (questionId: string) => {
+    const handleUpvote = (questionId: string, action: 'UPVOTE' | 'UNVOTE') => {
         const message: VoteQuestion = {
-            roomId: '123', // Replace with the actual room ID
             questionId,
-            method: 'UPVOTE',
+            method: action,
         };
         sendJsonMessage(message);
     };
 
-    useEffect(() => {
-        // Handle incoming WebSocket messages here
-    }, []);
-
     return (
-        <div className="container mx-auto p-4">
+        <div className="container mx-auto p-4 w-full">
             <div className="mb-4">
                 <input
                     type="text"
@@ -81,7 +93,9 @@ const Room: React.FC = () => {
                     value={inputText}
                     onChange={handleInputChange}
                     className="form-control"
-                    disabled={readyState !== ReadyState.OPEN && isSubscribedToRoom}
+                    disabled={
+                        readyState !== ReadyState.OPEN && isSubscribedToRoom
+                    }
                 />
                 <button
                     onClick={handlePostQuestion}
@@ -90,14 +104,18 @@ const Room: React.FC = () => {
                     Post
                 </button>
             </div>
-            <div>
-                {questions.map((question) => (
-                    <QuestionItem
-                        key={question.questionId}
-                        question={question}
-                        upvoteHandler={() => handleUpvote(question.questionId)}
-                    />
-                ))}
+            <div className='max-h-[750px] overflow-scroll'>
+                {questions
+                    .sort((x, y) => y.votes - x.votes)
+                    .map((question) => (
+                        <QuestionItem
+                            key={question.questionId}
+                            question={question}
+                            upvoteHandler={(action) =>
+                                handleUpvote(question.questionId, action)
+                            }
+                        />
+                    ))}
             </div>
         </div>
     );

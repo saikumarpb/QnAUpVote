@@ -2,7 +2,8 @@ export type MessageType =
     | SubscribeMessage
     | VoteQuestion
     | PostQuestion
-    | PublishQuestion;
+    | PublishQuestion
+    | SubscribeSuccessMessage;
 
 export type ErrorMessage = {
     message: string;
@@ -46,4 +47,5 @@ export type GetQuestion = {
     question: string;
     questionId: string;
     votes: number;
+    voted: boolean
 };
